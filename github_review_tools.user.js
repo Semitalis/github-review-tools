@@ -10,7 +10,6 @@
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
-// @require      http://code.jquery.com/jquery-latest.js
 // @grant        GM_setValue
 // @grant        GM_getValue
 // ==/UserScript==
