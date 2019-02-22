@@ -98,7 +98,13 @@ $(document).ready(function() {
             });
         },
         check : function(nodes){
-            var node, el;
+            var node, el, s;
+
+            // we only want to do this for the 'files' subpage
+            s = document.location.href;
+            if (s.match(/\/files$/) === null) {
+                return;
+            }
 
             // add our tools button if not already done so
             f.add_tools();
@@ -110,7 +116,6 @@ $(document).ready(function() {
 
             // recursive check of all children nodes
             for(node of nodes){
-                f.check(node.childNodes);
 
                 // check all buttons
                 if (node.nodeName === 'BUTTON') {
@@ -130,7 +135,13 @@ $(document).ready(function() {
                     if (el.attr('aria-expanded') !== true) {
                         el.click();
                     }
+
+                    // no need to check children
+                    continue;
                 }
+
+                // check children now
+                f.check(node.childNodes);
             }
         },
         init : function(){
