@@ -5,7 +5,7 @@
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
-// @version      1.0
+// @version      1.1
 // @homepage     https://github.com/Semitalis/github-review-tools
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
@@ -15,6 +15,8 @@
 // ==/UserScript==
 /*
 Changelog:
+1.1:
+- now the tools get added with individual commit ranges as well
 1.0:
 - initial version
 */
@@ -101,7 +103,7 @@ $(document).ready(function() {
 
             // we only want to do this for the 'files' subpage
             s = document.location.href;
-            if ((s.match(/\/files$/) === null) && (s.match(/\/commits\//) === null)) {
+            if ((s.match(/\/files\//) === null) && (s.match(/\/commits\//) === null)) {
                 return;
             }
 
