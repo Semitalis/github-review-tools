@@ -103,7 +103,7 @@ $(document).ready(function() {
 
             // we only want to do this for the 'files' subpage
             s = document.location.href;
-            if ((s.match(/\/files\//) === null) && (s.match(/\/commits\//) === null)) {
+            if ((s.match(/\/files/) === null) && (s.match(/\/commits\//) === null)) {
                 return;
             }
 
