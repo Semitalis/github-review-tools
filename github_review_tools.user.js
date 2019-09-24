@@ -5,7 +5,7 @@
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
-// @version      1.2
+// @version      1.2.1
 // @homepage     https://github.com/Semitalis/github-review-tools
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
@@ -15,6 +15,8 @@
 // ==/UserScript==
 /*
 Changelog:
+1.2.1:
+- small bug fixes
 1.2:
 - optimized performance
 - fixed tools not showing when switching between different diff views
@@ -80,8 +82,8 @@ $(document).ready(function() {
                     tool_bar.attr('grt_tools_added', 'yes');
 
                     // tools button markup
-                    tool_bar.prepend('<details class="diffbar-item details-reset details-expanded position-relative text-center">'
-                        + '  <summary class="btn btn-sm">Tools <div class="dropdown-caret v-align-text-bottom"></div></summary>'
+                    tool_bar.prepend('<details class="diffbar-item details-reset details-overlay position-relative text-center">'
+                        + '  <summary class="btn btn-sm">Tools <div class="dropdown-caret"></div></summary>'
                         + '  <div class="Popover js-diff-settings mt-2 pt-1" style="left: -86px">'
                         + '    <div class="Popover-message text-left p-3 mx-auto Box box-shadow-large">'
                         + '      <h4 class="mb-2">Just for now</h4>'
