@@ -5,16 +5,19 @@
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
-// @version      1.2.1
+// @version      1.2.2
 // @homepage     https://github.com/Semitalis/github-review-tools
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
-// @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
+// @require      https://code.jquery.com/jquery-3.6.0.min.js#sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=
 // @grant        GM_setValue
 // @grant        GM_getValue
 // ==/UserScript==
 /*
 Changelog:
+1.2.2:
+- fixed issues with tools not correctly loading up
+- updated jquery to latest version
 1.2.1:
 - small bug fixes
 1.2:
@@ -52,7 +55,7 @@ $(document).ready(function() {
         debug          : false,
         unique_id      : 0,
         toolbar_height : 200,
-        current_page   : null,
+        current_href   : null,
         check_timer    : null,
         settings       : {
             auto_collapse : semi_utils.storage.load('grt_auto_collapse', false),
@@ -76,13 +79,13 @@ $(document).ready(function() {
         add_tools : function(){
             $('div[class*="pr-review-tools"]').each(function(){
                 var tool_bar = $(this);
+                var semi_tools_id = 'semi-tools'
+                var semi_tools = $('#' + semi_tools_id);
 
                 // add the tools menu once
-                if (tool_bar.attr('grt_tools_added') !== 'yes') {
-                    tool_bar.attr('grt_tools_added', 'yes');
-
+                if (!semi_tools.length) {
                     // tools button markup
-                    tool_bar.prepend('<details class="diffbar-item details-reset details-overlay position-relative text-center">'
+                    tool_bar.prepend('<details id="' + semi_tools_id + '" class="diffbar-item details-reset details-overlay position-relative text-center">'
                         + '  <summary class="btn btn-sm">Tools <div class="dropdown-caret"></div></summary>'
                         + '  <div class="Popover js-diff-settings mt-2 pt-1" style="left: -86px">'
                         + '    <div class="Popover-message text-left p-3 mx-auto Box box-shadow-large">'
@@ -113,10 +116,12 @@ $(document).ready(function() {
                 });
             });
         },
-        on_page_change : function(){
+        on_location_change : function(){
             f.add_tools();
         },
-        on_auto_stuff : function(){;
+        on_dom_change : function(){
+            f.add_tools();
+
             // fetch all file nodes
             var files = $('div[id="files"]').find('div[id*="diff"]').each(function(){
                 var file = $(this);
@@ -183,25 +188,6 @@ $(document).ready(function() {
                 });
             });
         },
-        on_check : function(nodes){
-            var s = document.location.href
-
-            // whenever the page changes
-            if(m.current_page !== s){
-                m.current_page = s;
-                f.on_page_change();
-            }
-
-            // do certain things depending on settings
-            f.on_auto_stuff();
-        },
-        on_dom_change : function(){
-            clearTimeout(m.check_timer);
-            m.check_timer = setTimeout(function(){
-                m.check_timer = null;
-                f.on_check();
-              }, 250);
-        },
         init_css : function(){
             $('<style>'
                 + '.grt_btn-transparent { opacity: 0.5; }'
@@ -220,6 +206,18 @@ $(document).ready(function() {
 
             m.toolbar_height = $('[class*="pr-toolbar"]').height() + 20;
 
+            // setup observer for location change
+            setInterval(function(){
+                var s = document.location.href;
+                if(m.current_href == s){
+                    return;
+                }
+                m.current_href = s;
+                console.log('new href: ' + s);
+
+                f.on_location_change();
+            }, 100);
+
             // setup observer for new DOM elements
             m.observer = new MutationObserver(function(mutations) {
                 mutations.forEach(function() {
@@ -233,6 +231,7 @@ $(document).ready(function() {
             });
 
             // trigger check for already existing elements
+            f.on_location_change();
             f.on_dom_change();
 
             // all setup
