@@ -5,7 +5,7 @@
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
-// @version      1.2.2
+// @version      1.2.3
 // @homepage     https://github.com/Semitalis/github-review-tools
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
@@ -15,6 +15,8 @@
 // ==/UserScript==
 /*
 Changelog:
+1.2.3:
+- fixed collapse and expand
 1.2.2:
 - fixed issues with tools not correctly loading up
 - updated jquery to latest version
@@ -52,14 +54,15 @@ $(document).ready(function() {
 
     // PRIVATE VARIABLES
     var m = {
-        debug          : false,
-        unique_id      : 0,
-        toolbar_height : 200,
-        current_href   : null,
-        check_timer    : null,
-        settings       : {
-            auto_collapse : semi_utils.storage.load('grt_auto_collapse', false),
-            remember      : semi_utils.storage.load('grt_remember', true),
+        debug              : false,
+        ignore_dom_changes : false,
+        unique_id          : 0,
+        toolbar_height     : 200,
+        current_href       : null,
+        check_timer        : null,
+        settings           : {
+            auto_collapse  : semi_utils.storage.load('grt_auto_collapse', false),
+            remember       : semi_utils.storage.load('grt_remember', true),
         }
     };
 
@@ -71,36 +74,40 @@ $(document).ready(function() {
             }
         },
         collapseAll : function(){
-            $('div[id="files"]').find('button[class*="details"][aria-expanded="true"]').each(function(){$(this).click();});
+            m.ignore_dom_changes = true;
+            $('div[id="files"]').find('div[id*="diff"][class~="open"]').find('button[class*="details"]').each(function(){$(this).click();});
+            m.ignore_dom_changes = false;
         },
         expandAll : function(){
-            $('div[id="files"]').find('button[class*="details"][aria-expanded="false"]').each(function(){$(this).click();});
+            m.ignore_dom_changes = true;
+            $('div[id="files"]').find('div[id*="diff"]:not([class~="open"])').find('button[class*="details"]').each(function(){$(this).click();});
+            m.ignore_dom_changes = false;
         },
         add_tools : function(){
+            m.ignore_dom_changes = true;
             $('div[class*="pr-review-tools"]').each(function(){
-                var tool_bar = $(this);
                 var semi_tools_id = 'semi-tools'
                 var semi_tools = $('#' + semi_tools_id);
 
                 // add the tools menu once
                 if (!semi_tools.length) {
                     // tools button markup
-                    tool_bar.prepend('<details id="' + semi_tools_id + '" class="diffbar-item details-reset details-overlay position-relative text-center">'
-                        + '  <summary class="btn btn-sm">Tools <div class="dropdown-caret"></div></summary>'
-                        + '  <div class="Popover js-diff-settings mt-2 pt-1" style="left: -86px">'
-                        + '    <div class="Popover-message text-left p-3 mx-auto Box box-shadow-large">'
-                        + '      <h4 class="mb-2">Just for now</h4>'
-                        + '        <label class="btn btn-sm text-center" id="grt_btn_collapse_all">Collapse all</label>'
-                        + '        <label class="btn btn-sm text-center" id="grt_btn_expand_all">Expand all</label>'
-                        + '      <h4 class="mb-2 mt-3">General settings</h4>'
-                        + '        <input type="checkbox" value="1" id="grt_auto_collapse"' + (m.settings.auto_collapse ? ' checked' : '') + '>'
-                        + '        <label for="whitespace-cb" class="text-normal">Auto collapse on load</label>'
-                        // TODO
-                        //+ '        <br/><input type="checkbox" value="1" id="grt_remember"' + (m.settings.remember ? ' checked' : '') + '>'
-                        //+ '        <label for="whitespace-cb" class="text-normal">Remember collapse state</label>'
-                        + '    </div>'
-                        + '  </div>'
-                        + '</details>');
+                    $(this).prepend('<details id="' + semi_tools_id + '" class="diffbar-item details-reset details-overlay position-relative text-center">'
+                                    + '  <summary class="btn btn-sm">Tools <div class="dropdown-caret"></div></summary>'
+                                    + '  <div class="Popover js-diff-settings mt-2 pt-1" style="left: -86px">'
+                                    + '    <div class="Popover-message text-left p-3 mx-auto Box box-shadow-large">'
+                                    + '      <h4 class="mb-2">Just for now</h4>'
+                                    + '        <label class="btn btn-sm text-center" id="grt_btn_collapse_all">Collapse all</label>'
+                                    + '        <label class="btn btn-sm text-center" id="grt_btn_expand_all">Expand all</label>'
+                                    + '      <h4 class="mb-2 mt-3">General settings</h4>'
+                                    + '        <input type="checkbox" value="1" id="grt_auto_collapse"' + (m.settings.auto_collapse ? ' checked' : '') + '>'
+                                    + '        <label for="whitespace-cb" class="text-normal">Auto collapse on load</label>'
+                                    // TODO
+                                    //+ '        <br/><input type="checkbox" value="1" id="grt_remember"' + (m.settings.remember ? ' checked' : '') + '>'
+                                    //+ '        <label for="whitespace-cb" class="text-normal">Remember collapse state</label>'
+                                    + '    </div>'
+                                    + '  </div>'
+                                    + '</details>');
                 }
 
                 // always (re-)attach event handlers
@@ -115,15 +122,20 @@ $(document).ready(function() {
                     semi_utils.storage.save('grt_remember', this.checked);
                 });
             });
+            m.ignore_dom_changes = false;
         },
         on_location_change : function(){
             f.add_tools();
         },
         on_dom_change : function(){
+            if(m.ignore_dom_changes){
+                return;
+            }
+
             f.add_tools();
 
             // fetch all file nodes
-            var files = $('div[id="files"]').find('div[id*="diff"]').each(function(){
+            $('div[id="files"]').find('div[id*="diff"]').each(function(){
                 var file = $(this);
 
                 // unique id
