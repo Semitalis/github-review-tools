@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         GitHub Review Tools
 // @description  Extensions to make the reviewing process in GitHub a little more acceptable.
-// @include      http*://*git*/*
+// @match        http*://*git*/*
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
-// @version      1.2.3
+// @version      1.2.4
 // @homepage     https://github.com/Semitalis/github-review-tools
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
@@ -15,6 +15,8 @@
 // ==/UserScript==
 /*
 Changelog:
+1.2.4:
+- fixed warning and potentially some weird resource throttling
 1.2.3:
 - fixed collapse and expand
 1.2.2:
