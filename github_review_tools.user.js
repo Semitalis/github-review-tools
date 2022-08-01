@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name         GitHub Review Tools
 // @description  Extensions to make the reviewing process in GitHub a little more acceptable.
-// @match        http*://*git*/*
+// @match        *://gitext.elektrobitautomotive.com/*
+// @match        *://*.github.com/*
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
@@ -16,7 +17,7 @@
 /*
 Changelog:
 1.2.4:
-- fixed warning and potentially some weird resource throttling
+- fixed warning about include and bad event handling
 1.2.3:
 - fixed collapse and expand
 1.2.2:
@@ -129,79 +130,93 @@ $(document).ready(function() {
         on_location_change : function(){
             f.add_tools();
         },
-        on_dom_change : function(){
-            if(m.ignore_dom_changes){
-                return;
-            }
-
-            f.add_tools();
-
-            // fetch all file nodes
-            $('div[id="files"]').find('div[id*="diff"]').each(function(){
-                var file = $(this);
-
-                // unique id
-                if (file.attr('grt_uid_set') !== 'yes') {
-                    file.attr('grt_uid_set', 'yes').attr('grt_uid', m.unique_id++);
+        on_dom_change : (function(){
+            var timer = null;
+            var func = function() {
+                if(m.ignore_dom_changes){
+                    return;
                 }
-                var uid = file.attr('grt_uid');
 
-                // iterate header
-                file.children('[class*="file-header"]').each(function(){
-                    var header = $(this);
-                    var uid_s = 'grt_file_header_' + uid;
+                f.add_tools();
 
-                    // add additional toolbar at the top
-                    if (header.attr('grt_toolbar') !== 'yes') {
-                        header.attr('grt_toolbar', 'yes');
+                // fetch all file nodes
+                m.ignore_dom_changes = true;
+                $('div[id="files"]').find('div[id*="diff"]').each(function(){
+                    var file = $(this);
 
-                        header.find('a[aria-label*="View"]').after(
-                            '&nbsp;<label class="btn btn-sm text-center" id="' + uid_s + '_top">Top</label>'
-                        );
+                    // unique id
+                    if (file.attr('grt_uid_set') !== 'yes') {
+                        file.attr('grt_uid_set', 'yes').attr('grt_uid', m.unique_id++);
                     }
+                    var uid = file.attr('grt_uid');
 
-                    // always (re-)attach event handlers
-                    $('#' + uid_s + '_top').click(function(){
-                        window.scrollTo(0, 0);
+                    // iterate header
+                    file.children('[class*="file-header"]').each(function(){
+                        var header = $(this);
+                        var uid_s = 'grt_file_header_' + uid;
+
+                        // add additional toolbar at the top
+                        if (header.attr('grt_toolbar') !== 'yes') {
+                            header.attr('grt_toolbar', 'yes');
+
+                            header.find('a[aria-label*="View"]').after(
+                                '&nbsp;<label class="btn btn-sm text-center" id="' + uid_s + '_top">Top</label>'
+                            );
+                        }
+
+                        // always (re-)attach event handlers
+                        $('#' + uid_s + '_top').click(function(){
+                            window.scrollTo(0, 0);
+                        });
+
+                        // auto collapse file details
+                        if ((m.settings.auto_collapse === true) && (header.attr('grt_auto_collapsed') !== 'yes')) {
+                            header.attr('grt_auto_collapsed', 'yes');
+                            header.find('button[aria-expanded=true]').click();
+                        }
                     });
 
-                    // auto collapse file details
-                    if ((m.settings.auto_collapse === true) && (header.attr('grt_auto_collapsed') !== 'yes')) {
-                        header.attr('grt_auto_collapsed', 'yes');
-                        header.find('button[aria-expanded=true]').click();
-                    }
-                });
+                    // iterate content
+                    file.children('div[class*="Details-content"]').each(function(){
+                        var content = $(this);
+                        var uid_s = 'grt_file_content_' + uid;
 
-                // iterate content
-                file.children('div[class*="Details-content"]').each(function(){
-                    var content = $(this);
-                    var uid_s = 'grt_file_content_' + uid;
+                        // add additional toolbar at the bottom
+                        if (content.attr('grt_toolbar') !== 'yes') {
+                            content.attr('grt_toolbar', 'yes');
 
-                    // add additional toolbar at the bottom
-                    if (content.attr('grt_toolbar') !== 'yes') {
-                        content.attr('grt_toolbar', 'yes');
+                            // toolbar html
+                            content.append('<div style="position: absolute; right: 0; bottom: 0">'
+                                           + '<label class="btn btn-sm text-center grt_btn-transparent" id="' + uid_s + '_collapse">Collapse</label>&nbsp;'
+                                           + '<label class="btn btn-sm text-center grt_btn-transparent" id="' + uid_s + '_top">Top</label>'
+                                           + '</div>');
 
-                        // toolbar html
-                        content.append('<div style="position: absolute; right: 0; bottom: 0">'
-                            + '<label class="btn btn-sm text-center grt_btn-transparent" id="' + uid_s + '_collapse">Collapse</label>&nbsp;'
-                            + '<label class="btn btn-sm text-center grt_btn-transparent" id="' + uid_s + '_top">Top</label>'
-                            + '</div>');
+                        }
 
-                    }
-
-                    // always (re-)attach event handlers
-                    $('#' + uid_s + '_collapse').off().on('click', function(){
-                        var el = $(this).parent().parent().parent().find('button[aria-expanded=true]');
-                        $('html, body').stop().animate({scrollTop: (el.offset().top - m.toolbar_height)}, 300, 'swing', function(){
-                            $('[grt_uid="' + uid + '"]').find('button[aria-expanded=true]').click();
+                        // always (re-)attach event handlers
+                        $('#' + uid_s + '_collapse').off().on('click', function(){
+                            var el = $(this).parent().parent().parent().find('button[aria-expanded=true]');
+                            $('html, body').stop().animate({scrollTop: (el.offset().top - m.toolbar_height)}, 300, 'swing', function(){
+                                $('[grt_uid="' + uid + '"]').find('button[aria-expanded=true]').click();
+                            });
+                        });
+                        $('#' + uid_s + '_top').off().on('click', function(){
+                            window.scrollTo(0, 0);
                         });
                     });
-                    $('#' + uid_s + '_top').off().on('click', function(){
-                        window.scrollTo(0, 0);
-                    });
                 });
-            });
-        },
+                m.ignore_dom_changes = false;
+            };
+            return function(){
+                if(timer){
+                    clearTimeout(timer);
+                }
+                timer = setTimeout(function(){
+                    func();
+                    timer = null;
+                }, 100);
+            };
+        }()),
         init_css : function(){
             $('<style>'
                 + '.grt_btn-transparent { opacity: 0.5; }'
@@ -234,9 +249,7 @@ $(document).ready(function() {
 
             // setup observer for new DOM elements
             m.observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function() {
-                    f.on_dom_change();
-                });
+                f.on_dom_change();
             });
             m.observer.observe(document.body, {
                 childList  : true,
