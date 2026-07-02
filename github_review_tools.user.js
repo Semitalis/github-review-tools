@@ -193,7 +193,7 @@ $(document).ready(function() {
                         if ((m.settings.auto_load_large === true) && (header.attr('grt_auto_load_large') !== 'yes')) {
                             header.attr('grt_auto_load_large', 'yes');
                             var button = parent.find('.load-diff-button');
-                            if (button && button.find('p:contains(Large diffs are not rendered by default.)')) {
+                            if (button.length > 0 && button.parent().find("p:contains('Large diffs are not rendered by default.')").length > 0) {
                                 button.click();
                             }
                         }
