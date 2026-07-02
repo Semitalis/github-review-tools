@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         GitHub Review Tools
 // @description  Extensions to make the reviewing process in GitHub a little more acceptable.
-// @match        *://gitext.elektrobitautomotive.com/*
 // @match        *://*.github.com/*
+// @match        *://*.elektrobitautomotive.com/*
 // @license      MIT
 // @author       Semitalis
 // @namespace    https://github.com/Semitalis/
-// @version      1.2.4
+// @version      1.2.5
 // @homepage     https://github.com/Semitalis/github-review-tools
 // @downloadURL  https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
 // @updateURL    https://raw.githubusercontent.com/Semitalis/github-review-tools/master/github_review_tools.user.js
@@ -16,6 +16,10 @@
 // ==/UserScript==
 /*
 Changelog:
+1.2.5:
+- made elektrobit URL more generic
+- fixed auto collapse on load
+- added auto load large files option
 1.2.4:
 - fixed warning about include and bad event handling
 1.2.3:
@@ -63,9 +67,11 @@ $(document).ready(function() {
         toolbar_height     : 200,
         current_href       : null,
         check_timer        : null,
+        semi_tools_id      : 'semi-tools',
         settings           : {
-            auto_collapse  : semi_utils.storage.load('grt_auto_collapse', false),
-            remember       : semi_utils.storage.load('grt_remember', true),
+            auto_collapse    : semi_utils.storage.load('grt_auto_collapse', false),
+            auto_load_large  : semi_utils.storage.load('grt_auto_load_large', false),
+            remember         : semi_utils.storage.load('grt_remember', true),
         }
     };
 
@@ -89,13 +95,12 @@ $(document).ready(function() {
         add_tools : function(){
             m.ignore_dom_changes = true;
             $('div[class*="pr-review-tools"]').each(function(){
-                var semi_tools_id = 'semi-tools'
-                var semi_tools = $('#' + semi_tools_id);
+                var semi_tools = $('#' + m.semi_tools_id);
 
                 // add the tools menu once
                 if (!semi_tools.length) {
                     // tools button markup
-                    $(this).prepend('<details id="' + semi_tools_id + '" class="diffbar-item details-reset details-overlay position-relative text-center">'
+                    $(this).prepend('<details id="' + m.semi_tools_id + '" class="diffbar-item details-reset details-overlay position-relative text-center">'
                                     + '  <summary class="btn btn-sm">Tools <div class="dropdown-caret"></div></summary>'
                                     + '  <div class="Popover js-diff-settings mt-2 pt-1" style="left: -86px">'
                                     + '    <div class="Popover-message text-left p-3 mx-auto Box box-shadow-large">'
@@ -105,6 +110,8 @@ $(document).ready(function() {
                                     + '      <h4 class="mb-2 mt-3">General settings</h4>'
                                     + '        <input type="checkbox" value="1" id="grt_auto_collapse"' + (m.settings.auto_collapse ? ' checked' : '') + '>'
                                     + '        <label for="whitespace-cb" class="text-normal">Auto collapse on load</label>'
+                                    + '        <br/><input type="checkbox" value="1" id="grt_auto_load_large"' + (m.settings.auto_load_large ? ' checked' : '') + '>'
+                                    + '        <label for="whitespace-cb" class="text-normal">Auto load large files</label>'
                                     // TODO
                                     //+ '        <br/><input type="checkbox" value="1" id="grt_remember"' + (m.settings.remember ? ' checked' : '') + '>'
                                     //+ '        <label for="whitespace-cb" class="text-normal">Remember collapse state</label>'
@@ -119,6 +126,10 @@ $(document).ready(function() {
                 $('#grt_auto_collapse').click(function(){
                     m.settings.auto_collapse = this.checked;
                     semi_utils.storage.save('grt_auto_collapse', this.checked);
+                });
+                $('#grt_auto_load_large').click(function(){
+                    m.settings.auto_load_large = this.checked;
+                    semi_utils.storage.save('grt_auto_load_large', this.checked);
                 });
                 $('#grt_remember').click(function(){
                     m.settings.remember = this.checked;
@@ -153,6 +164,7 @@ $(document).ready(function() {
                     // iterate header
                     file.children('[class*="file-header"]').each(function(){
                         var header = $(this);
+                        var parent = header.parent();
                         var uid_s = 'grt_file_header_' + uid;
 
                         // add additional toolbar at the top
@@ -172,7 +184,18 @@ $(document).ready(function() {
                         // auto collapse file details
                         if ((m.settings.auto_collapse === true) && (header.attr('grt_auto_collapsed') !== 'yes')) {
                             header.attr('grt_auto_collapsed', 'yes');
-                            header.find('button[aria-expanded=true]').click();
+                            if (parent.hasClass('open') === true) {
+                                header.find('button[aria-expanded=true]').click();
+                            }
+                        }
+
+                        // auto load large file details
+                        if ((m.settings.auto_load_large === true) && (header.attr('grt_auto_load_large') !== 'yes')) {
+                            header.attr('grt_auto_load_large', 'yes');
+                            var button = parent.find('.load-diff-button');
+                            if (button && button.find('p:contains(Large diffs are not rendered by default.)')) {
+                                button.click();
+                            }
                         }
                     });
 
@@ -219,6 +242,7 @@ $(document).ready(function() {
         }()),
         init_css : function(){
             $('<style>'
+                + '#' + m.semi_tools_id + ' { padding-right: 10px }'
                 + '.grt_btn-transparent { opacity: 0.5; }'
                 + '.grt_btn-transparent:hover { opacity: 1.0; transition: opacity .4s ease-in-out; }'
             + '</style>').appendTo('body');
